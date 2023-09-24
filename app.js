@@ -4,6 +4,7 @@ const { Server } = require("socket.io");
 let users = require("./users.js");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+const { v4 } = require("uuid");
 
 const app = express();
 app.use(cors());
@@ -46,8 +47,6 @@ io.use((socket, next) => {
 });
 
 io.on("connect", (socket) => {
-  // console.log({ sockets: io.of("/").sockets });
-  // io.of("/").sockets.then((data) => console.log({ sockets: data }));
   console.log("Connected: " + socket.user.username);
   for (const [id, socket] of io.of("/").sockets) {
     if (socket.connected) {
@@ -56,18 +55,20 @@ io.on("connect", (socket) => {
         user.id === socket.user.id ? socket.user : user
       );
     }
-    console.log({ userOnline: socket.user, socket });
   }
-  console.log({ users });
   socket.join(socket.user.id);
 
   socket.broadcast.emit("online", socket.user.id);
   socket.emit("users", users);
   socket.emit("session", { user: socket.user, token: socket.token });
 
-  socket.on("send_message", (message) => {
-    socket.to(message.sentTo).emit("recieve_message", message);
+  socket.on("send_message", (message, cb) => {
+    message.id = v4();
     console.log({ message });
+    socket.to(message.sentTo).emit("recieve_message", message, () => {
+      socket.emit("recieved_by_other", message.id);
+    });
+    cb({ ok: true, messageId: message.id });
   });
 
   socket.on("disconnect", async () => {
