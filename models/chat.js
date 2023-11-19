@@ -11,7 +11,7 @@ const MessageSchema = new mongoose.Schema({
   members: [
     { type: mongoose.Schema.Types.ObjectId, required: true, ref: "User" },
   ],
-  date: { type: Date, required: true },
+  admin: { type: Date, required: true },
   recived: { type: Boolean, default: false },
   read: { type: Boolean, default: false },
   sent: { type: Boolean, default: false },

@@ -5,6 +5,7 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const { v4 } = require("uuid");
 const mongoose = require("mongoose");
+const fs = require("fs");
 require("dotenv").config();
 var bodyParser = require("body-parser");
 // let users = require("./users.js");
@@ -22,6 +23,19 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
+app.get("/uploads/:imageName", (req, res) => {
+  // do a bunch of if statements to make sure the user is
+  // authorized to view this image, then
+  try {
+    const imageName = req.params.imageName;
+    const readStream = fs.createReadStream(`uploads/${imageName}`);
+    readStream.pipe(res);
+  } catch (e) {
+    console.log("Error occured in finding a the file: ", req.params.imageName);
+    console.log("Error: ", e);
+  }
+});
+
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
@@ -29,10 +43,12 @@ const io = new Server(server, {
   },
 });
 
-const userRouter = require("./routes/users.js");
 const User = require("./models/user.js");
 const Message = require("./models/message.js");
+const userRouter = require("./routes/users.js");
 app.use("/users", userRouter);
+const fileRouter = require("./routes/files.js");
+app.use("/files", fileRouter);
 
 // Messages sent by Sender but not recieved by reciever because offline.
 const tempMessages = [];
@@ -60,7 +76,6 @@ io.use(async (socket, next) => {
     // users.find(
     //   (user) => user.username === username && user.password === password
     // );
-    console.log({ user });
     if (!user) {
       next(
         new Error("Cannot find a user with the provided username and password!")
@@ -87,7 +102,7 @@ io.on("connect", async (socket) => {
       );
     }
   }
-  socket.join(socket.user._id);
+  socket.join(socket.user.id.toString());
 
   socket.broadcast.emit("online", socket.user.id);
   socket.emit("users", users);
@@ -100,32 +115,40 @@ io.on("connect", async (socket) => {
   Message.find({
     $or: [{ sentTo: socket.user.id }, { sentBy: socket.user.id }],
   })
+    .populate("attachment")
     .exec()
     .then((messages) => {
       socket.emit("recive_initial_messages", { messages });
     });
 
-  socket.on("send_message", (m, cb) => {
+  socket.on("send_message", async (m, cb) => {
     m.sent = true;
     const message = new Message(m);
     message.save();
+    if (message.attachment) {
+      await message.populate("attachment");
+    }
     socket.to(message.sentTo._id.toString()).emit("recieve_message", message);
-    console.log("THe message has been Sent." + message.content);
-    cb({ ok: true, messageId: message.id });
-    tempMessages.unshift(message);
+    cb({ ok: true, messageId: message._id.toString() });
+    console.log("Sent: ", message, message.sentTo._id.toString(), {
+      room: socket.rooms,
+    });
   });
 
-  // socket.on("send_message", (message, cb) => {
-  //   message.id = v4();
-  //   socket.to(message.sentTo).emit("recieve_message", message);
-  //   cb({ ok: true, messageId: message.id });
-  //   tempMessages.unshift(message);
-  // });
-
   socket.on("recieved_message_by_user", (message) => {
+    // Dont recive messages already recived
     message.recived = true;
-    socket.to(message.sentBy).emit("received_by_other", {
-      messageId: message.id,
+    const bundleId =
+      message.sentBy.toString() === socket.user.id
+        ? message.sentTo
+        : message.sentBy;
+    // console.log({ message, user: socket.user, bundleId });
+    Message.findByIdAndUpdate(message._id, { recived: true })
+      .exec()
+      .catch((err) => console.error(err));
+    // socket.to(message.sentBy).emit("recieved_by_other", {
+    socket.to(message.sentBy).emit("recived_by_other", {
+      messageId: message._id,
       bundleId: message.sentTo,
     });
   });

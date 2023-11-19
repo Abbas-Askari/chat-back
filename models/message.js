@@ -15,6 +15,7 @@ const MessageSchema = new mongoose.Schema({
   recived: { type: Boolean, default: false },
   read: { type: Boolean, default: false },
   sent: { type: Boolean, default: false },
+  attachment: { type: mongoose.Schema.Types.ObjectId, ref: "Attachment" },
 });
 
 const Message = mongoose.model("Message", MessageSchema);

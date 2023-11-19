@@ -1,5 +1,6 @@
 const express = require("express");
 const User = require("../models/user");
+const upload = require("../upload");
 const router = express.Router();
 
 router.get("/", (req, res, next) => {
@@ -7,7 +8,7 @@ router.get("/", (req, res, next) => {
   res.json({ users });
 });
 
-router.post("/", async (req, res, next) => {
+router.post("/", upload.single("avatar"), async (req, res, next) => {
   // const post = Post({
   //     title: req.body.title,
   //     content: req.body.content,
@@ -15,19 +16,25 @@ router.post("/", async (req, res, next) => {
   //     date: new Date(),
   //   });
   //   const result = await post.save();
-  console.log("body", req.body);
   const { password, username } = req.body;
+  console.log(req.body);
   if (!username) {
     return res.status(400).json({ error: "Please provide a valid username" });
   }
   if (!password) {
     return res.status(400).json({ error: "Please provide a valid password" });
   }
-  const user = new User({ username, password });
-  console.log({ username, password });
+  const user = new User({
+    username,
+    password,
+    avatar: req.file ? "http://localhost:3000/" + req.file.path : null,
+  });
   const result = await user.save();
-  console.log(result);
   return res.json({ result });
+});
+
+router.delete("/", async (req, res, next) => {
+  User.findByIdAndDelete(req.body.id);
 });
 
 module.exports = router;
