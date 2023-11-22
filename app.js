@@ -39,7 +39,8 @@ app.get("/uploads/:imageName", (req, res) => {
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    // origin: "http://localhost:5173",
+    origin: "https://chat-app-abbas.netlify.app",
   },
 });
 

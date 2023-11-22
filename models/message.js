@@ -8,7 +8,7 @@ const MessageSchema = new mongoose.Schema({
   //       }]
   //    }
   // ] run
-  content: { type: String, required: true },
+  content: { type: String, required: contentRequirment },
   sentBy: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "User" },
   sentTo: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "User" },
   date: { type: Date, required: true },
@@ -17,6 +17,10 @@ const MessageSchema = new mongoose.Schema({
   sent: { type: Boolean, default: false },
   attachment: { type: mongoose.Schema.Types.ObjectId, ref: "Attachment" },
 });
+
+function contentRequirment() {
+  return typeof this.content === "string" ? false : true;
+}
 
 const Message = mongoose.model("Message", MessageSchema);
 
