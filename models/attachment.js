@@ -14,7 +14,7 @@ const attachmentSchema = new mongoose.Schema(
 );
 
 attachmentSchema.virtual("url").get(function () {
-  return `https://chat-app-abbas.netlify.app/${this.path}`;
+  return `http://localhost:3000/${this.path}`;
 });
 
 const Attachment = mongoose.model("Attachment", attachmentSchema);
