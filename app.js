@@ -40,7 +40,8 @@ const server = createServer(app);
 const io = new Server(server, {
   cors: {
     // origin: "http://localhost:5173",
-    origin: "https://chat-app-abbas.netlify.app",
+    // https://chat-app-abbas.netlify.app/
+    origin: ["https://chat-app-abbas.netlify.app/", "http://localhost:5173"],
   },
 });
 
@@ -194,5 +195,5 @@ io.on("connect", async (socket) => {
 });
 
 server.listen(3000, () => {
-  console.log("Server started listening on http://localhost:3000/");
+  console.log("Server started listening port 3000/");
 });
