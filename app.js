@@ -74,6 +74,7 @@ io.use(async (socket, next) => {
     // );
 
     let user = await User.findOne({ username, password }).exec();
+    console.log({ user });
     user = { ...user._doc, id: user._id };
     // users.find(
     //   (user) => user.username === username && user.password === password
