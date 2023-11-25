@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const { createServer } = require("node:http");
 const { Server } = require("socket.io");
@@ -6,14 +7,15 @@ const jwt = require("jsonwebtoken");
 const { v4 } = require("uuid");
 const mongoose = require("mongoose");
 const fs = require("fs");
-require("dotenv").config();
 var bodyParser = require("body-parser");
 // let users = require("./users.js");
 
 mongoose
   .connect(process.env.MONGO_URL)
-  .then((data) => {
+  .then(async (data) => {
     console.log("connected");
+    // const res = await Attachment.deleteMany({ size: { $gt: 10000 } });
+    // console.log({ res });
   })
   .catch((err) => console.error(err));
 
@@ -50,6 +52,7 @@ const Message = require("./models/message.js");
 const userRouter = require("./routes/users.js");
 app.use("/users", userRouter);
 const fileRouter = require("./routes/files.js");
+const Attachment = require("./models/attachment.js");
 app.use("/files", fileRouter);
 
 // Messages sent by Sender but not recieved by reciever because offline.
@@ -125,16 +128,15 @@ io.on("connect", async (socket) => {
 
   socket.on("send_message", async (m, cb) => {
     m.sent = true;
+    m.attachment = new Attachment(m.attachment);
     const message = new Message(m);
     message.save();
-    if (message.attachment) {
+    if (m.attachment) {
       await message.populate("attachment");
     }
+    console.log({ m, message });
     socket.to(message.sentTo._id.toString()).emit("recieve_message", message);
     cb({ ok: true, messageId: message._id.toString() });
-    console.log("Sent: ", message, message.sentTo._id.toString(), {
-      room: socket.rooms,
-    });
   });
 
   socket.on("recieved_message_by_user", (message) => {

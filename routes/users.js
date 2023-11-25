@@ -1,6 +1,6 @@
 const express = require("express");
 const User = require("../models/user");
-const upload = require("../upload");
+const { upload } = require("../upload");
 const router = express.Router();
 
 router.get("/", (req, res, next) => {
