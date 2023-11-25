@@ -77,15 +77,12 @@ io.use(async (socket, next) => {
     // );
 
     let user = await User.findOne({ username, password }).exec();
-    user = { ...user._doc, id: user._id };
-    // users.find(
-    //   (user) => user.username === username && user.password === password
-    // );
     if (!user) {
       next(
         new Error("Cannot find a user with the provided username and password!")
       );
     } else {
+      user = { ...user._doc, id: user._id };
       socket.user = user;
       jwt.sign(user, "secret", (err, token) => {
         socket.token = token;
