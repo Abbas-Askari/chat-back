@@ -27,7 +27,10 @@ router.post("/", upload.single("avatar"), async (req, res, next) => {
   const user = new User({
     username,
     password,
-    avatar: req.file ? "http://localhost:3000/" + req.file.path : null,
+    avatar: req.file
+      ? "https://abbas-chat-back.onrender.com/" + req.file.path
+      : null,
+    // avatar: req.file ? "http://localhost:3000/" + req.file.path : null,
   });
   const result = await user.save();
   return res.json({ result });

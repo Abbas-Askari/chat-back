@@ -14,7 +14,7 @@ const attachmentSchema = new mongoose.Schema(
 );
 
 attachmentSchema.virtual("url").get(function () {
-  return `http://localhost:3000/files/${this.filename}`;
+  return `https://abbas-chat-back.onrender.com/files/${this.filename}`;
 });
 
 // attachmentSchema.virtual("url").get(function () {

@@ -112,19 +112,17 @@ io.on("connect", async (socket) => {
   socket.broadcast.emit("online", socket.user.id);
   socket.emit("users", users);
   socket.emit("session", { user: socket.user, token: socket.token });
-  // tempMessages.forEach((message) => {
-  //   if (message.sentTo !== socket.user.id) return;
-  //   socket.emit("recieve_message", message);
-  // });
 
-  Message.find({
-    $or: [{ sentTo: socket.user.id }, { sentBy: socket.user.id }],
-  })
-    .populate("attachment")
-    .exec()
-    .then((messages) => {
-      socket.emit("recive_initial_messages", { messages });
-    });
+  socket.on("ready_to_recive", () => {
+    Message.find({
+      $or: [{ sentTo: socket.user.id }, { sentBy: socket.user.id }],
+    })
+      .populate("attachment")
+      .exec()
+      .then((messages) => {
+        socket.emit("recive_initial_messages", { messages });
+      });
+  });
 
   socket.on("send_message", async (m, cb) => {
     m.sent = true;
