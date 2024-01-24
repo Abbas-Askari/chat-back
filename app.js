@@ -22,21 +22,22 @@ mongoose
 const app = express();
 app.use(cors());
 
+app.use(express.json());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
-app.get("/uploads/:imageName", (req, res) => {
-  // do a bunch of if statements to make sure the user is
-  // authorized to view this image, then
-  try {
-    const imageName = req.params.imageName;
-    const readStream = fs.createReadStream(`uploads/${imageName}`);
-    readStream.pipe(res);
-  } catch (e) {
-    console.log("Error occured in finding a the file: ", req.params.imageName);
-    console.log("Error: ", e);
-  }
-});
+// app.get("/uploads/:imageName", (req, res) => {
+//   // do a bunch of if statements to make sure the user is
+//   // authorized to view this image, then
+//   try {
+//     const imageName = req.params.imageName;
+//     const readStream = fs.createReadStream(`uploads/${imageName}`);
+//     readStream.pipe(res);
+//   } catch (e) {
+//     console.log("Error occured in finding a the file: ", req.params.imageName);
+//     console.log("Error: ", e);
+//   }
+// });
 
 const server = createServer(app);
 const io = new Server(server, {
@@ -63,11 +64,15 @@ io.use(async (socket, next) => {
 
   const { username, password, token } = socket.handshake.auth;
   if (token) {
-    jwt.verify(token, "secret", (err, user) => {
+    jwt.verify(token, "secret", async (err, user) => {
       if (err) {
         return next(err);
       } else {
-        socket.user = user;
+        let u = await User.findOne({
+          username: user.username,
+          password: user.password,
+        }).exec();
+        socket.user = u;
         return next();
       }
     });
@@ -84,10 +89,15 @@ io.use(async (socket, next) => {
     } else {
       user = { ...user._doc, id: user._id };
       socket.user = user;
-      jwt.sign(user, "secret", (err, token) => {
-        socket.token = token;
-        next();
-      });
+      const avatar = user.avatar;
+      jwt.sign(
+        { username: user.username, password: user.password, id: user.id },
+        "secret",
+        (err, token) => {
+          socket.token = token;
+          next();
+        }
+      );
     }
   }
 });
